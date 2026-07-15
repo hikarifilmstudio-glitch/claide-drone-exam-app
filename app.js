@@ -171,10 +171,7 @@
         }
       } else { // exam：可反覆改答案，不顯示對錯
         if (key === chosen) btn.classList.add("chosen");
-        btn.addEventListener("click", function () {
-          session.chosen[q.id] = key;
-          renderQuestion();
-        });
+        btn.addEventListener("click", function () { answerExam(q, key); });
       }
       box.appendChild(btn);
     });
@@ -208,6 +205,25 @@
 
     // 答對自動跳下一題（留一點時間看到「答對了！」再跳）；答錯留在原題，等使用者自己操作
     if (ok && session.index < session.questions.length - 1) {
+      const answeredIndex = session.index;
+      setTimeout(function () {
+        if (session && session.index === answeredIndex) {
+          session.index++;
+          renderQuestion();
+        }
+      }, 600);
+    }
+  }
+
+  function answerExam(q, key) {
+    session.chosen[q.id] = key;
+    renderQuestion();
+
+    const isLast = session.index === session.questions.length - 1;
+    if (isLast) {
+      // 最後一題答完，問要不要交卷；選「取消」就留在最後一題，還能改答案或按上一題檢查
+      if (confirm("已經是最後一題了，要交卷嗎？")) submitExam();
+    } else {
       const answeredIndex = session.index;
       setTimeout(function () {
         if (session && session.index === answeredIndex) {
