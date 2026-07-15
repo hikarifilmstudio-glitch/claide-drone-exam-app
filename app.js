@@ -49,7 +49,7 @@
 
   // ===== 跨裝置同步（Cloudflare Worker + KV，離線優先）=====
   // 部署 worker/ 之後，把下面這個佔位字串換成實際的 https://xxx.workers.dev 網址
-  const API_BASE = "__WORKER_URL_PLACEHOLDER__";
+  const API_BASE = "https://drone-exam-sync.hikarifilmstudio.workers.dev";
 
   function updatedAtKey() { return "droneExamWrongUpdatedAt:" + getCurrentUser(); }
   function loadUpdatedAt() {

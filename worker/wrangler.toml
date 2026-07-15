@@ -8,6 +8,6 @@ name = "drone-exam-sync"
 main = "src/index.js"
 compatibility_date = "2026-07-15"
 
-# [[kv_namespaces]]
-# binding = "PROGRESS_KV"
-# id = "" # ← 先跑 wrangler kv namespace create PROGRESS_KV 後填入
+[[kv_namespaces]]
+binding = "PROGRESS_KV"
+id = "658dc8e17fdd43c8845859bbf3f49897"
