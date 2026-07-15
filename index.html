@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>無人機學科測驗題庫練習</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <button id="btn-home" class="link-btn" title="回首頁">&#8962; 無人機學科題庫練習</button>
+  <span id="topbar-info"></span>
+</header>
+
+<main id="app">
+
+  <!-- 首頁 -->
+  <section id="view-home" class="view">
+    <h1>遙控無人機專業操作證<br>學科測驗練習</h1>
+    <p class="subtitle" id="home-total"></p>
+
+    <div class="mode-grid">
+      <button class="mode-card" data-mode="chapter">
+        <span class="mode-icon">&#128218;</span>
+        <span class="mode-name">依章節練習</span>
+        <span class="mode-desc">逐題練習，立即看對錯</span>
+      </button>
+      <button class="mode-card" data-mode="random">
+        <span class="mode-icon">&#127922;</span>
+        <span class="mode-name">隨機出題</span>
+        <span class="mode-desc">全題庫打亂順序練習</span>
+      </button>
+      <button class="mode-card" data-mode="exam">
+        <span class="mode-icon">&#128221;</span>
+        <span class="mode-name">模擬考模式</span>
+        <span class="mode-desc">隨機抽題，交卷才看成績</span>
+      </button>
+      <button class="mode-card" data-mode="wrong">
+        <span class="mode-icon">&#10060;</span>
+        <span class="mode-name">複習錯題本</span>
+        <span class="mode-desc" id="wrong-count-desc">目前沒有錯題</span>
+      </button>
+    </div>
+
+    <div class="chapter-stats">
+      <h2>題庫章節</h2>
+      <ul id="chapter-list"></ul>
+    </div>
+  </section>
+
+  <!-- 章節選擇 -->
+  <section id="view-chapters" class="view hidden">
+    <h1>選擇章節</h1>
+    <div id="chapter-buttons" class="chapter-buttons"></div>
+    <button class="secondary back-btn" data-goto="home">&#8592; 回首頁</button>
+  </section>
+
+  <!-- 模擬考設定 -->
+  <section id="view-exam-setup" class="view hidden">
+    <h1>模擬考設定</h1>
+    <div class="setup-form">
+      <label>抽題數量
+        <input type="number" id="exam-count" min="1" max="588" value="50">
+      </label>
+      <label>及格門檻（%）
+        <input type="number" id="exam-pass" min="1" max="100" value="80">
+      </label>
+      <button class="primary" id="btn-start-exam">開始模擬考</button>
+      <button class="secondary back-btn" data-goto="home">&#8592; 回首頁</button>
+    </div>
+  </section>
+
+  <!-- 答題（練習 / 模擬考共用） -->
+  <section id="view-quiz" class="view hidden">
+    <div class="quiz-header">
+      <span id="quiz-progress"></span>
+      <span id="quiz-chapter" class="quiz-chapter"></span>
+    </div>
+    <div class="question-card">
+      <p id="quiz-stem" class="stem"></p>
+      <div id="quiz-options" class="options"></div>
+      <div id="quiz-feedback" class="feedback hidden"></div>
+    </div>
+    <div class="quiz-nav">
+      <button class="secondary" id="btn-prev">&#8592; 上一題</button>
+      <button class="secondary" id="btn-next">下一題 &#8594;</button>
+      <button class="primary hidden" id="btn-submit-exam">交卷</button>
+    </div>
+    <button class="link-btn quit-btn" id="btn-quit">結束並回首頁</button>
+  </section>
+
+  <!-- 模擬考成績 -->
+  <section id="view-result" class="view hidden">
+    <h1>模擬考成績</h1>
+    <div class="result-card" id="result-summary"></div>
+    <div class="quiz-nav">
+      <button class="primary" id="btn-review">查看逐題詳解</button>
+      <button class="secondary" data-goto="home">回首頁</button>
+    </div>
+    <div id="result-detail" class="result-detail hidden"></div>
+  </section>
+
+</main>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
