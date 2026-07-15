@@ -104,6 +104,25 @@
     } catch (e) { /* 忽略 */ }
   }
 
+  // ===== 章節練習進度（記住上次做到哪一題，依目前使用者分開存，僅本機）=====
+  function chapterProgressKey() { return "droneExamChapterProgress:" + getCurrentUser(); }
+  function loadChapterProgress() {
+    try {
+      const obj = JSON.parse(localStorage.getItem(chapterProgressKey()) || "{}");
+      return (obj && typeof obj === "object") ? obj : {};
+    } catch (e) { return {}; }
+  }
+  function saveChapterProgress(chapterName, index) {
+    const obj = loadChapterProgress();
+    obj[chapterName] = index;
+    localStorage.setItem(chapterProgressKey(), JSON.stringify(obj));
+  }
+  function clearChapterProgress(chapterName) {
+    const obj = loadChapterProgress();
+    delete obj[chapterName];
+    localStorage.setItem(chapterProgressKey(), JSON.stringify(obj));
+  }
+
   // ===== 工具 =====
   function shuffle(arr) {
     const a = arr.slice();
@@ -128,14 +147,16 @@
   let session = null;
 
   function startSession(mode, questions, opts) {
+    const startIndex = (opts && opts.startIndex >= 0 && opts.startIndex < questions.length) ? opts.startIndex : 0;
     session = {
       mode: mode,
       questions: questions,
-      index: 0,
+      index: startIndex,
       chosen: {},          // 題目 id -> 使用者選的選項字母
       fromWrongBook: !!(opts && opts.fromWrongBook),
       passPercent: (opts && opts.passPercent) || 80,
-      label: (opts && opts.label) || ""
+      label: (opts && opts.label) || "",
+      chapterName: (opts && opts.chapterName) || null // 只有「依章節練習」會設定，用來記住上次做到哪
     };
     $("btn-submit-exam").classList.toggle("hidden", mode !== "exam");
     renderQuestion();
@@ -191,6 +212,15 @@
     $("btn-prev").disabled = session.index === 0;
     $("btn-next").disabled = session.index === total - 1;
     $("topbar-info").textContent = (session.index + 1) + " / " + total;
+
+    // 章節練習記住上次做到哪一題；答完最後一題視為這輪結束，下次重新開始
+    if (session.chapterName) {
+      if (session.index === total - 1 && answered) {
+        clearChapterProgress(session.chapterName);
+      } else {
+        saveChapterProgress(session.chapterName, session.index);
+      }
+    }
   }
 
   function answerPractice(q, key) {
@@ -321,12 +351,20 @@
   function buildChapterButtons() {
     const box = $("chapter-buttons");
     box.innerHTML = "";
+    const progress = loadChapterProgress();
     QUESTION_DATA.forEach(function (ch, i) {
+      const savedIndex = progress[ch.chapter];
+      const resuming = typeof savedIndex === "number" && savedIndex > 0;
       const btn = document.createElement("button");
-      btn.innerHTML = escapeHtml(ch.chapter) + ' <span class="count">（' + ch.questions.length + " 題）</span>";
+      btn.innerHTML = escapeHtml(ch.chapter) + ' <span class="count">（' + ch.questions.length + " 題）</span>" +
+        (resuming ? '<span class="count">　從第 ' + (savedIndex + 1) + ' 題繼續</span>' : "");
       btn.addEventListener("click", function () {
         const qs = ALL.filter(function (q) { return q.chapter === ch.chapter; });
-        startSession("practice", qs, { label: "第" + "一二三四五六七八九十"[i] + "章" });
+        startSession("practice", qs, {
+          label: "第" + "一二三四五六七八九十"[i] + "章",
+          chapterName: ch.chapter,
+          startIndex: resuming ? savedIndex : 0
+        });
       });
       box.appendChild(btn);
     });
