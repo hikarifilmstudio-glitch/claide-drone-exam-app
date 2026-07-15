@@ -13,15 +13,28 @@
     });
   });
 
-  // ===== 錯題本（localStorage）=====
-  const WRONG_KEY = "droneExamWrongIds";
+  // ===== 使用者識別（localStorage）=====
+  // 只是拿名字當資料夾分開存檔，沒有密碼、不做帳號驗證
+  const USER_KEY = "droneExamCurrentUser";
+  function cleanUserName(name) {
+    return String(name || "").trim().slice(0, 20);
+  }
+  function getCurrentUser() {
+    return cleanUserName(localStorage.getItem(USER_KEY));
+  }
+  function setCurrentUser(name) {
+    localStorage.setItem(USER_KEY, cleanUserName(name));
+  }
+
+  // ===== 錯題本（localStorage，依目前使用者分開存）=====
+  function wrongKey() { return "droneExamWrongIds:" + getCurrentUser(); }
   function loadWrong() {
     try {
-      const arr = JSON.parse(localStorage.getItem(WRONG_KEY) || "[]");
+      const arr = JSON.parse(localStorage.getItem(wrongKey()) || "[]");
       return Array.isArray(arr) ? arr.filter(function (id) { return BY_ID[id]; }) : [];
     } catch (e) { return []; }
   }
-  function saveWrong(arr) { localStorage.setItem(WRONG_KEY, JSON.stringify(arr)); }
+  function saveWrong(arr) { localStorage.setItem(wrongKey(), JSON.stringify(arr)); }
   function addWrong(id) {
     const arr = loadWrong();
     if (arr.indexOf(id) === -1) { arr.push(id); saveWrong(arr); }
@@ -41,7 +54,7 @@
   }
   function $(id) { return document.getElementById(id); }
 
-  const VIEWS = ["home", "chapters", "exam-setup", "quiz", "result"];
+  const VIEWS = ["user", "home", "chapters", "exam-setup", "quiz", "result"];
   function showView(name) {
     VIEWS.forEach(function (v) {
       $("view-" + v).classList.toggle("hidden", v !== name);
@@ -212,6 +225,7 @@
       ul.appendChild(li);
     });
     $("home-total").textContent = "全題庫共 " + total + " 題，分 " + QUESTION_DATA.length + " 章";
+    $("current-user-name").textContent = getCurrentUser();
     updateHomeCounts();
   }
 
@@ -231,6 +245,7 @@
 
   function goHome() {
     $("topbar-info").textContent = "";
+    if (!getCurrentUser()) { showView("user"); return; } // 還沒輸入名字就先識別身份
     updateHomeCounts();
     showView("home");
   }
@@ -290,7 +305,30 @@
     $("result-detail").classList.toggle("hidden");
   });
 
+  // ===== 使用者識別畫面 =====
+  function confirmUserName() {
+    const name = cleanUserName($("user-name").value);
+    if (!name) { alert("請輸入名字或暱稱"); return; }
+    setCurrentUser(name);
+    buildHome();
+    showView("home");
+  }
+  $("btn-user-start").addEventListener("click", confirmUserName);
+  $("user-name").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") confirmUserName();
+  });
+  $("btn-switch-user").addEventListener("click", function () {
+    $("user-name").value = getCurrentUser();
+    showView("user");
+    $("user-name").focus();
+  });
+
   // ===== 啟動 =====
-  buildHome();
-  showView("home");
+  if (getCurrentUser()) {
+    buildHome();
+    showView("home");
+  } else {
+    showView("user");
+    $("user-name").focus();
+  }
 })();

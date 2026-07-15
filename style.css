@@ -48,6 +48,17 @@ h1 { font-size: 24px; text-align: center; margin: 12px 0 8px; }
 h2 { font-size: 17px; margin-bottom: 8px; }
 .subtitle { text-align: center; color: var(--muted); margin-bottom: 20px; }
 
+/* 使用者識別 */
+.user-bar {
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+  margin: -12px 0 16px;
+}
+.user-bar strong { color: var(--text); }
+.user-bar .link-btn { margin-left: 6px; }
+.user-hint { font-size: 12px; color: var(--muted); text-align: center; }
+
 /* 首頁模式卡片 */
 .mode-grid {
   display: grid;

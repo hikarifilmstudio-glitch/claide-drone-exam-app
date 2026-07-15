@@ -14,10 +14,27 @@
 
 <main id="app">
 
+  <!-- 輸入名字（識別使用者） -->
+  <section id="view-user" class="view hidden">
+    <h1>你是誰？</h1>
+    <p class="subtitle">輸入你的名字或暱稱，錯題本會依名字分開記錄</p>
+    <div class="setup-form">
+      <label>名字 / 暱稱
+        <input type="text" id="user-name" maxlength="20" placeholder="例如：新野" autocomplete="off">
+      </label>
+      <button class="primary" id="btn-user-start">開始使用</button>
+      <p class="user-hint">進度只存在這台裝置的瀏覽器裡，換裝置不會同步</p>
+    </div>
+  </section>
+
   <!-- 首頁 -->
   <section id="view-home" class="view">
     <h1>遙控無人機專業操作證<br>學科測驗練習</h1>
     <p class="subtitle" id="home-total"></p>
+
+    <p class="user-bar">目前使用者：<strong id="current-user-name"></strong>
+      <button class="link-btn" id="btn-switch-user">切換使用者</button>
+    </p>
 
     <div class="mode-grid">
       <button class="mode-card" data-mode="chapter">
