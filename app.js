@@ -34,13 +34,74 @@
       return Array.isArray(arr) ? arr.filter(function (id) { return BY_ID[id]; }) : [];
     } catch (e) { return []; }
   }
-  function saveWrong(arr) { localStorage.setItem(wrongKey(), JSON.stringify(arr)); }
+  function saveWrong(arr) {
+    localStorage.setItem(wrongKey(), JSON.stringify(arr));
+    localStorage.setItem(updatedAtKey(), String(Date.now()));
+    pushRemote(); // 非同步同步到雲端，失敗就算了（本機已存好）
+  }
   function addWrong(id) {
     const arr = loadWrong();
     if (arr.indexOf(id) === -1) { arr.push(id); saveWrong(arr); }
   }
   function removeWrong(id) {
     saveWrong(loadWrong().filter(function (x) { return x !== id; }));
+  }
+
+  // ===== 跨裝置同步（Cloudflare Worker + KV，離線優先）=====
+  // 部署 worker/ 之後，把下面這個佔位字串換成實際的 https://xxx.workers.dev 網址
+  const API_BASE = "__WORKER_URL_PLACEHOLDER__";
+
+  function updatedAtKey() { return "droneExamWrongUpdatedAt:" + getCurrentUser(); }
+  function loadUpdatedAt() {
+    const n = parseInt(localStorage.getItem(updatedAtKey()) || "0", 10);
+    return n > 0 ? n : 0;
+  }
+  function progressUrl() {
+    return API_BASE + "/progress?user=" + encodeURIComponent(getCurrentUser());
+  }
+
+  // 把本機最新的錯題本推上雲端。fire-and-forget：不等回應、不擋 UI，
+  // 離線或 API 還沒部署好時失敗也沒關係，本機 localStorage 一切照常。
+  function pushRemote() {
+    const user = getCurrentUser();
+    if (!user) return;
+    try {
+      fetch(progressUrl(), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ wrongIds: loadWrong(), updatedAt: loadUpdatedAt() })
+      }).catch(function () { /* 離線／未部署：忽略 */ });
+    } catch (e) { /* 忽略 */ }
+  }
+
+  // 從雲端抓進度，跟本機做「聯集合併」（兩邊錯題 id 取聯集、updatedAt 取較新），
+  // 合併結果同時寫回本機與雲端，讓兩邊一致。整個過程非同步，失敗就靜靜放棄。
+  function syncFromRemote() {
+    const user = getCurrentUser();
+    if (!user) return;
+    try {
+      fetch(progressUrl())
+        .then(function (res) {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.json();
+        })
+        .then(function (remote) {
+          if (getCurrentUser() !== user) return; // 期間切換了使用者，放棄這次結果
+          const remoteIds = (remote && Array.isArray(remote.wrongIds)) ? remote.wrongIds : [];
+          const merged = loadWrong();
+          remoteIds.forEach(function (id) {
+            if (BY_ID[id] && merged.indexOf(id) === -1) merged.push(id);
+          });
+          const remoteAt = (remote && typeof remote.updatedAt === "number") ? remote.updatedAt : 0;
+          const mergedAt = Math.max(loadUpdatedAt(), remoteAt);
+          // 直接寫 localStorage（不走 saveWrong），避免把合併當成一次新編輯亂蓋 updatedAt
+          localStorage.setItem(wrongKey(), JSON.stringify(merged));
+          localStorage.setItem(updatedAtKey(), String(mergedAt));
+          pushRemote();
+          updateHomeCounts(); // 合併進新錯題時，首頁「待複習」數字即時更新
+        })
+        .catch(function () { /* 離線／未部署：忽略，維持純本機行為 */ });
+    } catch (e) { /* 忽略 */ }
   }
 
   // ===== 工具 =====
@@ -312,6 +373,7 @@
     setCurrentUser(name);
     buildHome();
     showView("home");
+    syncFromRemote(); // 背景同步雲端錯題本，失敗不影響使用
   }
   $("btn-user-start").addEventListener("click", confirmUserName);
   $("user-name").addEventListener("keydown", function (e) {
@@ -327,6 +389,7 @@
   if (getCurrentUser()) {
     buildHome();
     showView("home");
+    syncFromRemote(); // 背景同步雲端錯題本，失敗不影響使用
   } else {
     showView("user");
     $("user-name").focus();

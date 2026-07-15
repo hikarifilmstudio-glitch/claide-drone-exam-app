@@ -1,0 +1,13 @@
+# drone-exam-sync — 無人機學科練習 App 跨裝置進度同步後端
+# 部署前置作業（由負責部署的人執行）：
+#   1. wrangler kv namespace create PROGRESS_KV
+#   2. 把指令輸出的 id 填進下面 [[kv_namespaces]] 的 id
+#   3. wrangler deploy，再把拿到的 workers.dev 網址填回前端 app.js 的 API_BASE
+
+name = "drone-exam-sync"
+main = "src/index.js"
+compatibility_date = "2026-07-15"
+
+# [[kv_namespaces]]
+# binding = "PROGRESS_KV"
+# id = "" # ← 先跑 wrangler kv namespace create PROGRESS_KV 後填入
