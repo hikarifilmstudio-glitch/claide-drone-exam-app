@@ -69,7 +69,11 @@
       fetch(progressUrl(), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ wrongIds: loadWrong(), updatedAt: loadUpdatedAt() })
+        body: JSON.stringify({
+          wrongIds: loadWrong(),
+          chapterProgress: loadChapterProgress(),
+          updatedAt: loadUpdatedAt()
+        })
       }).catch(function () { /* 離線／未部署：忽略 */ });
     } catch (e) { /* 忽略 */ }
   }
@@ -97,14 +101,30 @@
           // 直接寫 localStorage（不走 saveWrong），避免把合併當成一次新編輯亂蓋 updatedAt
           localStorage.setItem(wrongKey(), JSON.stringify(merged));
           localStorage.setItem(updatedAtKey(), String(mergedAt));
+
+          // 章節進度：每一章分別取兩邊較大的索引（進度較多的一邊贏），不會因為合併而倒退
+          const remoteProgress = (remote && remote.chapterProgress && typeof remote.chapterProgress === "object")
+            ? remote.chapterProgress : {};
+          const localProgress = loadChapterProgress();
+          const mergedProgress = {};
+          Object.keys(localProgress).forEach(function (ch) { mergedProgress[ch] = localProgress[ch]; });
+          Object.keys(remoteProgress).forEach(function (ch) {
+            if (!(ch in mergedProgress) || remoteProgress[ch] > mergedProgress[ch]) {
+              mergedProgress[ch] = remoteProgress[ch];
+            }
+          });
+          localStorage.setItem(chapterProgressKey(), JSON.stringify(mergedProgress));
+
           pushRemote();
           updateHomeCounts(); // 合併進新錯題時，首頁「待複習」數字即時更新
+          // 如果剛好正在看「選擇章節」畫面，同步完重畫一次，才不會看到合併前的舊提示
+          if (!$("view-chapters").classList.contains("hidden")) buildChapterButtons();
         })
         .catch(function () { /* 離線／未部署：忽略，維持純本機行為 */ });
     } catch (e) { /* 忽略 */ }
   }
 
-  // ===== 章節練習進度（記住上次做到哪一題，依目前使用者分開存，僅本機）=====
+  // ===== 章節練習進度（記住上次做到哪一題，依目前使用者分開存，跨裝置同步）=====
   function chapterProgressKey() { return "droneExamChapterProgress:" + getCurrentUser(); }
   function loadChapterProgress() {
     try {
@@ -116,11 +136,13 @@
     const obj = loadChapterProgress();
     obj[chapterName] = index;
     localStorage.setItem(chapterProgressKey(), JSON.stringify(obj));
+    pushRemote();
   }
   function clearChapterProgress(chapterName) {
     const obj = loadChapterProgress();
     delete obj[chapterName];
     localStorage.setItem(chapterProgressKey(), JSON.stringify(obj));
+    pushRemote();
   }
 
   // ===== 工具 =====

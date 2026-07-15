@@ -3,7 +3,7 @@
    非機密資料（只有考題練習進度），刻意不做身份驗證，保持簡單。
 
    API：
-     GET /progress?user=<名字>  → {"wrongIds": [...], "updatedAt": <毫秒時間戳>}
+     GET /progress?user=<名字>  → {"wrongIds": [...], "chapterProgress": {...}, "updatedAt": <毫秒時間戳>}
      PUT /progress?user=<名字>  body 同上格式 → 存進 KV，回傳存好的內容
 */
 
@@ -28,6 +28,19 @@ function cleanUserName(name) {
   return String(name || "").trim().slice(0, 20);
 }
 
+// 只留下「章節名稱字串 → 非負整數索引」的合法項目，其他丟掉
+function cleanChapterProgress(obj) {
+  const out = {};
+  if (!obj || typeof obj !== "object") return out;
+  Object.keys(obj).forEach(function (key) {
+    const val = obj[key];
+    if (typeof val === "number" && val >= 0 && Number.isInteger(val)) {
+      out[key] = val;
+    }
+  });
+  return out;
+}
+
 export default {
   async fetch(request, env) {
     // CORS preflight
@@ -49,10 +62,11 @@ export default {
     if (request.method === "GET") {
       const stored = await env.PROGRESS_KV.get(kvKey, { type: "json" });
       if (!stored || !Array.isArray(stored.wrongIds)) {
-        return json({ wrongIds: [], updatedAt: 0 });
+        return json({ wrongIds: [], chapterProgress: {}, updatedAt: 0 });
       }
       return json({
         wrongIds: stored.wrongIds,
+        chapterProgress: cleanChapterProgress(stored.chapterProgress),
         updatedAt: typeof stored.updatedAt === "number" ? stored.updatedAt : 0,
       });
     }
@@ -69,9 +83,10 @@ export default {
             return typeof id === "string" || typeof id === "number";
           })
         : [];
+      const chapterProgress = cleanChapterProgress(body && body.chapterProgress);
       const updatedAt =
         body && typeof body.updatedAt === "number" ? body.updatedAt : Date.now();
-      const record = { wrongIds: wrongIds, updatedAt: updatedAt };
+      const record = { wrongIds: wrongIds, chapterProgress: chapterProgress, updatedAt: updatedAt };
       await env.PROGRESS_KV.put(kvKey, JSON.stringify(record));
       return json(record);
     }
