@@ -198,12 +198,24 @@
 
   function answerPractice(q, key) {
     session.chosen[q.id] = key;
-    if (key === q.answer) {
+    const ok = key === q.answer;
+    if (ok) {
       if (session.fromWrongBook) removeWrong(q.id); // 錯題複習答對 → 移出錯題本
     } else {
       addWrong(q.id);
     }
     renderQuestion();
+
+    // 答對自動跳下一題（留一點時間看到「答對了！」再跳）；答錯留在原題，等使用者自己操作
+    if (ok && session.index < session.questions.length - 1) {
+      const answeredIndex = session.index;
+      setTimeout(function () {
+        if (session && session.index === answeredIndex) {
+          session.index++;
+          renderQuestion();
+        }
+      }, 600);
+    }
   }
 
   function escapeHtml(s) {
