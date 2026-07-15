@@ -235,12 +235,16 @@
     $("btn-next").disabled = session.index === total - 1;
     $("topbar-info").textContent = (session.index + 1) + " / " + total;
 
-    // 章節練習記住上次做到哪一題；答完最後一題視為這輪結束，下次重新開始
+    // 章節練習記住「走到最遠」的那一題；答完最後一題視為這輪結束，下次重新開始。
+    // 只在往前推進時才存，按「上一題」回頭複習不會把記住的進度往回蓋掉。
     if (session.chapterName) {
       if (session.index === total - 1 && answered) {
         clearChapterProgress(session.chapterName);
       } else {
-        saveChapterProgress(session.chapterName, session.index);
+        const savedIndex = loadChapterProgress()[session.chapterName];
+        if (typeof savedIndex !== "number" || session.index > savedIndex) {
+          saveChapterProgress(session.chapterName, session.index);
+        }
       }
     }
   }
